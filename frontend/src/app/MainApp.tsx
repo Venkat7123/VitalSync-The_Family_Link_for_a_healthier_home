@@ -38,6 +38,8 @@ export function MainApp() {
         return <ProgressView key="progress" />;
       case "caregiver_hub":
         return <CaregiverHubView key="caregiver_hub" />;
+      case "caregiver":
+        return <CaregiverHubView key="caregiver" />;
       // Add other views here as they are built
       default:
         return <OnboardingView key="default_onboarding" />;

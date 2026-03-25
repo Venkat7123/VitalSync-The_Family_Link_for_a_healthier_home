@@ -42,7 +42,8 @@ body {
   background: var(--color-background);
   color: var(--color-foreground);
   font-family: var(--font-sans);
-  font-size: 22px;
+  /* 22px made the entire UI feel oversized (especially sidebar + buttons). */
+  font-size: 18px;
   line-height: 1.6;
   overflow-x: hidden;
 }
@@ -114,15 +115,16 @@ body {
 
 /* Big accessible button */
 .btn-accessible {
-  min-height: 96px;
-  border-radius: 1.5rem;
-  font-size: 22px;
+  /* Accessible tap target without making every button comically large */
+  min-height: 56px;
+  border-radius: 1.25rem;
+  font-size: 18px;
   font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.75rem;
-  width: 100%;
+  width: auto;
   transition: all 0.2s ease;
   cursor: pointer;
   border: none;

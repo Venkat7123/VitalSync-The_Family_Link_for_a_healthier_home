@@ -4,10 +4,32 @@ import { Sidebar } from "@/components/Sidebar";
 import { SosEmergency } from "@/components/SosEmergency";
 import { Providers } from "@/context/Providers";
 import { AnimatePresence, motion } from "framer-motion";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { getToken } from "@/lib/api";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
+
+  // Avoid hydration mismatch: server can't read localStorage, so we read token after mount.
+  const [token, setToken] = useState<string | null>(null);
+  useEffect(() => {
+    // This is intentional: we need a post-mount snapshot of localStorage.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setToken(getToken());
+  }, []);
+
+  useEffect(() => {
+    if (token === null) return;
+    if (!token) {
+      router.replace("/login");
+    }
+  }, [router, token]);
+
+  if (token === null || !token) {
+    return null; // Return nothing while checking auth
+  }
 
   return (
     <Providers>

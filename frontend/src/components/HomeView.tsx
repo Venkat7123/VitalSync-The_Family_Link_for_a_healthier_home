@@ -4,44 +4,86 @@ import { motion } from "framer-motion";
 import { useAppContext } from "@/context/AppContext";
 import { Pill, CheckCircle2, Clock, AlertCircle } from "lucide-react";
 import { useEffect, useState } from "react";
+import { fetchApi, getUser } from "@/lib/api";
 
 export function HomeView() {
   const { userRole, medicines, setMedicines } = useAppContext();
-  const [greeting, setGreeting] = useState("");
+  const titleCase = (value: string) => value.charAt(0).toUpperCase() + value.slice(1);
+  const canLogProgress = userRole === "patient";
+
+  const [greeting, setGreeting] = useState("Hello");
   const [currentPeriod, setCurrentPeriod] = useState<"morning" | "afternoon" | "evening" | "night">("morning");
+  const [displayName, setDisplayName] = useState("there");
 
   useEffect(() => {
-    const hour = new Date().getHours();
-    if (hour >= 5 && hour < 12) {
-      setGreeting("Good Morning");
-      setCurrentPeriod("morning");
-    } else if (hour >= 12 && hour < 17) {
-      setGreeting("Good Afternoon");
-      setCurrentPeriod("afternoon");
-    } else if (hour >= 17 && hour < 21) {
-      setGreeting("Good Evening");
-      setCurrentPeriod("evening");
-    } else {
-      setGreeting("Good Night");
-      setCurrentPeriod("night");
-    }
-  }, []);
+    // Defer state updates outside the effect body (eslint rule in this repo).
+    const t = setTimeout(() => {
+      const hour = new Date().getHours();
+      if (hour >= 5 && hour < 12) {
+        setGreeting("Good Morning");
+        setCurrentPeriod("morning");
+      } else if (hour >= 12 && hour < 17) {
+        setGreeting("Good Afternoon");
+        setCurrentPeriod("afternoon");
+      } else if (hour >= 17 && hour < 21) {
+        setGreeting("Good Evening");
+        setCurrentPeriod("evening");
+      } else {
+        setGreeting("Good Night");
+        setCurrentPeriod("night");
+      }
 
-  const periodMeds = medicines.filter(m => m.period === currentPeriod);
+      const local = getUser() as { fullName?: string } | null;
+      let name = local?.fullName?.trim() || "";
+
+      if (userRole === "caregiver") {
+        try {
+          const stored = localStorage.getItem("vs_active_patient");
+          const parsed = stored ? (JSON.parse(stored) as { patientName?: string } | null) : null;
+          const pn = parsed?.patientName?.trim();
+          if (pn) name = pn;
+        } catch {}
+      }
+
+      const first = name.split(" ").filter(Boolean)[0];
+      setDisplayName(first || (userRole === "caregiver" ? "Patient" : "there"));
+    }, 0);
+    return () => clearTimeout(t);
+  }, [userRole]);
+
+  const periodMeds = medicines.filter((m) => {
+    if (m.sessions && m.sessions.length) return m.sessions.includes(currentPeriod);
+    return m.period === currentPeriod;
+  });
   const takenCount = medicines.filter(m => m.taken).length;
   const totalCount = medicines.length;
+  const progressPct = totalCount ? Math.round((takenCount / totalCount) * 100) : 0;
+
+  const handleMarkTaken = async (medId: string | number) => {
+    if (!canLogProgress) return;
+
+    // Optimistic: mark as taken locally.
+    setMedicines((prev) => prev.map((m) => (m.id === medId ? { ...m, taken: true } : m)));
+    try {
+      await fetchApi(`/medications/${medId}/log`, { method: "POST" });
+    } catch (err) {
+      console.error("Failed to log medicine intake", err);
+      // Revert if backend call fails.
+      setMedicines((prev) => prev.map((m) => (m.id === medId ? { ...m, taken: false } : m)));
+      alert("Failed to mark as taken. Please try again.");
+    }
+  };
 
   return (
     <div className="w-full max-w-4xl mx-auto space-y-8 animate-in fade-in duration-500">
       <header>
         <h1 className="text-4xl font-bold mb-2 tracking-tight">
-          {greeting}, <span className="gradient-text">Jane</span>
+          {greeting}, <span className="gradient-text">{displayName}</span>
         </h1>
         <p className="text-muted text-lg">
           {userRole === "patient" 
             ? "Here is your health overview for today."
-            : "Monitor Jane's health and medication status."
-          }
+            : `Monitor ${displayName}'s health and medication status.`}
         </p>
       </header>
 
@@ -68,21 +110,25 @@ export function HomeView() {
                     </div>
                     <div>
                       <p className="font-bold text-base">{med.name}</p>
-                      <p className="text-sm text-muted">{med.dosage} • {med.time}</p>
+                      <p className="text-sm text-muted">
+                        {med.dosage} - {med.sessions?.map((s) => titleCase(s)).join(", ") || med.time}
+                      </p>
                     </div>
                   </div>
-                  
-                  <button
-                    onClick={() => userRole === 'patient' && setMedicines(medicines.map(m => m.id === med.id ? { ...m, taken: !m.taken } : m))}
-                    disabled={userRole !== 'patient'}
-                    className={`shrink-0 px-4 py-2 rounded-lg font-bold text-sm transition-all flex items-center justify-center gap-2 ${
-                      med.taken 
-                        ? "bg-success/10 text-success hover:bg-success/20 border border-success/30" 
-                        : "bg-primary text-white hover:bg-primary/90 glow-primary"
-                    }`}
-                  >
-                    {med.taken ? "Completed" : "Mark as Taken"}
-                  </button>
+
+                  {canLogProgress ? (
+                    <button
+                      onClick={() => !med.taken && handleMarkTaken(med.id)}
+                      disabled={med.taken}
+                      className={`shrink-0 px-4 py-2 rounded-lg font-bold text-sm transition-all flex items-center justify-center gap-2 ${
+                        med.taken 
+                          ? "bg-success/10 text-success border border-success/30 cursor-default" 
+                          : "bg-primary text-white hover:bg-primary/90 glow-primary"
+                      }`}
+                    >
+                      {med.taken ? "Completed" : "Mark as Taken"}
+                    </button>
+                  ) : null}
                 </div>
               ))
             ) : (
@@ -98,13 +144,13 @@ export function HomeView() {
             <div className="w-full h-4 bg-surface rounded-full overflow-hidden border border-card-border/30">
               <motion.div 
                 initial={{ width: 0 }}
-                animate={{ width: `${(takenCount / totalCount) * 100}%` }}
+                animate={{ width: `${progressPct}%` }}
                 className="h-full bg-primary glow-primary"
               />
             </div>
             <div className="flex justify-between mt-3 text-sm">
               <span className="text-muted font-medium">{takenCount} of {totalCount} completed</span>
-              <span className="text-primary font-bold">{Math.round((takenCount / totalCount) * 100)}%</span>
+              <span className="text-primary font-bold">{progressPct}%</span>
             </div>
           </div>
 
@@ -121,18 +167,7 @@ export function HomeView() {
         </div>
       </div>
 
-      {userRole === "caregiver" && (
-        <div className="glass-card p-6">
-           <h2 className="text-xl font-semibold mb-4">Caregiver Quick Actions</h2>
-           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <button className="flex flex-col items-center gap-2 p-4 rounded-xl bg-surface hover:bg-primary/10 transition-colors border border-card-border/50">
-                <Pill className="w-6 h-6 text-primary" />
-                <span className="text-xs font-semibold">Verify Meds</span>
-              </button>
-              {/* Add more caregiver specific quick actions here */}
-           </div>
-        </div>
-      )}
+      {userRole === "caregiver" ? null : null}
     </div>
   );
 }

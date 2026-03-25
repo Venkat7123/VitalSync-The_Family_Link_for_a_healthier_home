@@ -5,12 +5,16 @@ import React, { createContext, useContext, useState, ReactNode } from "react";
 export type UserRole = "patient" | "caregiver" | null;
 
 export interface Medicine {
-  id: number;
+  id: string | number;
   name: string;
   dosage: string;
   time: string; // e.g., "08:00 AM"
   period: "morning" | "afternoon" | "evening" | "night";
   duration: string;
+  sessions?: Array<"morning" | "afternoon" | "evening" | "night">;
+  foodRelation?: "before_food" | "after_food" | "with_food" | "anytime";
+  foodOffsetMinutes?: number;
+  days?: number;
   taken: boolean;
 }
 
@@ -21,6 +25,9 @@ export interface Report {
   status: string;
   issues: number;
   importantData: string;
+  fileUrl?: string;
+  extractedMetrics?: string;
+  rawExtractedText?: string;
   insight: {
     type: "improvement" | "alert" | "stable";
     message: string;
@@ -37,7 +44,8 @@ export type AppView =
   | "appointments"
   | "progress"
   | "sos"
-  | "caregiver_hub";
+  | "caregiver"
+  | "caregiver_hub"; // legacy
 
 interface AppContextProps {
   userRole: UserRole;
@@ -61,34 +69,25 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [currentView, setCurrentView] = useState<AppView>("onboarding");
   const [isSosActive, setIsSosActive] = useState(false);
   
-  const [medicines, setMedicines] = useState<Medicine[]>([
-    { id: 1, name: "Aspirin", dosage: "100mg", time: "08:00 AM", period: "morning", duration: "30 days", taken: true },
-    { id: 2, name: "Metformin", dosage: "500mg", time: "01:00 PM", period: "afternoon", duration: "90 days", taken: false },
-    { id: 3, name: "Atorvastatin", dosage: "20mg", time: "08:00 PM", period: "evening", duration: "Ongoing", taken: false },
-  ]);
-
-  const [reports, setReports] = useState<Report[]>([
-    { 
-      id: 1, 
-      date: "Mar 10, 2026", 
-      type: "Blood Work", 
-      status: "Analysis Complete", 
-      issues: 1,
-      importantData: "LDL Cholesterol: 110 mg/dL",
-      insight: { type: "alert", message: "Slightly elevated. Reduce saturated fats." }
-    },
-    { 
-      id: 2, 
-      date: "Feb 15, 2026", 
-      type: "ECG Scan", 
-      status: "Normal", 
-      issues: 0,
-      importantData: "Heart Rate: 72 BPM",
-      insight: { type: "stable", message: "Normal sinus rhythm detected." }
-    },
-  ]);
+  const [medicines, setMedicines] = useState<Medicine[]>([]);
+  const [reports, setReports] = useState<Report[]>([]);
 
   const [theme, setTheme] = useState<"dark" | "light">("dark");
+
+  React.useEffect(() => {
+    // Restore role on refresh (auth is stored in localStorage by api.ts).
+    try {
+      const stored = localStorage.getItem("vs_user");
+      if (!stored) return;
+      const parsed = JSON.parse(stored) as { role?: string } | null;
+      const role = (parsed?.role || "").toLowerCase();
+      if (role === "patient" || role === "caregiver") {
+        setUserRole(role);
+      }
+    } catch {
+      // Ignore invalid storage state.
+    }
+  }, []);
 
   React.useEffect(() => {
     // Check local storage on mount
