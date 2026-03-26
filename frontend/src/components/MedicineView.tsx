@@ -13,6 +13,20 @@ function titleCase(value: string) {
   return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
+function parseSessionsFromFrequency(frequency: string): Medicine["period"][] {
+  const candidates = frequency
+    .split(",")
+    .map((session) => session.trim().toLowerCase())
+    .filter(Boolean);
+  const result: Medicine["period"][] = [];
+  for (const session of candidates) {
+    if (SESSION_OPTIONS.includes(session as Medicine["period"])) {
+      result.push(session as Medicine["period"]);
+    }
+  }
+  return result;
+}
+
 function formatFoodGuidance(
   foodRelation: Medicine["foodRelation"],
   foodOffsetMinutes?: number
@@ -86,12 +100,7 @@ export function MedicineView() {
           const mapped: Medicine[] = data.map((d: Record<string, unknown>) => {
             const frequency = typeof d.frequency === "string" ? d.frequency : "";
             const instructions = typeof d.instructions === "string" ? d.instructions : "";
-            const parsedSessions: Medicine["period"][] = frequency
-              .split(",")
-              .map((session) => session.trim().toLowerCase())
-              .filter((session): session is Medicine["period"] =>
-                SESSION_OPTIONS.includes(session as Medicine["period"])
-              );
+            const parsedSessions = parseSessionsFromFrequency(frequency);
             const sessions: Medicine["period"][] =
               parsedSessions.length > 0 ? parsedSessions : [...DEFAULT_SESSIONS];
             const parsed = parseFoodAndDaysFromInstructions(instructions);
@@ -102,16 +111,13 @@ export function MedicineView() {
               name: String(d.name || ""),
               dosage: String(d.dosage || ""),
               time: frequency || sessions.map((session) => titleCase(session)).join(", "),
-              period: "morning",
+              period: sessions[0] || "morning",
               duration: instructions || "Ongoing",
               foodRelation: parsed.foodRelation,
               foodOffsetMinutes: parsed.foodOffsetMinutes,
               days: parsed.days,
               taken: false, // local state reset daily
             };
-          });
-          mapped.forEach((med) => {
-            med.period = med.sessions?.[0] || "morning";
           });
           setMedicines(mapped);
         }
