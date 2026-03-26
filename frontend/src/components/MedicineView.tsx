@@ -7,6 +7,7 @@ import { useState, useRef, useEffect } from "react";
 import { fetchApi } from "@/lib/api";
 
 const SESSION_OPTIONS: Array<Medicine["period"]> = ["morning", "afternoon", "evening", "night"];
+const DEFAULT_SESSIONS: Medicine["period"][] = ["morning"];
 
 function titleCase(value: string) {
   return value.charAt(0).toUpperCase() + value.slice(1);
@@ -67,7 +68,7 @@ export function MedicineView() {
   const [newMed, setNewMed] = useState<Partial<Medicine>>({
     name: "",
     dosage: "",
-    sessions: ["morning"],
+    sessions: [...DEFAULT_SESSIONS],
     period: "morning",
     time: "Morning",
     foodRelation: "after_food",
@@ -85,13 +86,14 @@ export function MedicineView() {
           const mapped: Medicine[] = data.map((d: Record<string, unknown>) => {
             const frequency = typeof d.frequency === "string" ? d.frequency : "";
             const instructions = typeof d.instructions === "string" ? d.instructions : "";
-            const parsedSessions = frequency
+            const parsedSessions: Medicine["period"][] = frequency
               .split(",")
               .map((session) => session.trim().toLowerCase())
               .filter((session): session is Medicine["period"] =>
                 SESSION_OPTIONS.includes(session as Medicine["period"])
               );
-            const sessions = parsedSessions.length > 0 ? parsedSessions : ["morning"];
+            const sessions: Medicine["period"][] =
+              parsedSessions.length > 0 ? parsedSessions : [...DEFAULT_SESSIONS];
             const parsed = parseFoodAndDaysFromInstructions(instructions);
 
             return {
@@ -127,7 +129,7 @@ export function MedicineView() {
     setNewMed({
       name: "",
       dosage: "",
-      sessions: ["morning"],
+      sessions: [...DEFAULT_SESSIONS],
       period: "morning",
       time: "Morning",
       foodRelation: "after_food",
@@ -148,7 +150,7 @@ export function MedicineView() {
     setNewMed({
       name: med.name,
       dosage: med.dosage,
-      sessions: med.sessions && med.sessions.length ? med.sessions : ["morning"],
+      sessions: med.sessions && med.sessions.length ? med.sessions : [...DEFAULT_SESSIONS],
       period: (med.sessions?.[0] || med.period || "morning") as Medicine["period"],
       time: med.sessions?.map((s) => titleCase(s)).join(", ") || med.time || "Morning",
       foodRelation: med.foodRelation || "anytime",
@@ -255,7 +257,7 @@ export function MedicineView() {
     setNewMed({
       name: "Amoxicillin",
       dosage: "500mg",
-      sessions: ["afternoon", "night"],
+      sessions: ["afternoon", "night"] as Medicine["period"][],
       period: "afternoon",
       time: "Afternoon, Night",
       foodRelation: "after_food",
@@ -487,12 +489,14 @@ export function MedicineView() {
                         <button
                           key={session}
                           type="button"
-                          onClick={() =>
-                            setNewMed((prev) => {
-                              const current = prev.sessions || [];
-                              if (current.includes(session)) {
-                                const next = current.filter((s) => s !== session);
-                                return {
+                            onClick={() =>
+                              setNewMed((prev) => {
+                                const current = (prev.sessions && prev.sessions.length
+                                  ? prev.sessions
+                                  : [...DEFAULT_SESSIONS]) as Medicine["period"][];
+                                if (current.includes(session)) {
+                                  const next = current.filter((s) => s !== session);
+                                  return {
                                   ...prev,
                                   sessions: next.length ? next : current,
                                   period: (next[0] || prev.period || "morning") as Medicine["period"],
