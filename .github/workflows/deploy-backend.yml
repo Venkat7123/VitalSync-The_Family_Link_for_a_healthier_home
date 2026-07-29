@@ -1,0 +1,35 @@
+name: Build and Deploy Backend to Azure
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'backend/**'
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Build JAR with Maven
+        run: ./mvnw clean package -DskipTests
+        working-directory: backend/vitalsync
+
+      - name: Deploy JAR to Azure Web App
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: vitalsync-backend-h3d4h6c3acf2hdeu
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          package: backend/vitalsync/target/vitalsync-0.0.1-SNAPSHOT.jar
