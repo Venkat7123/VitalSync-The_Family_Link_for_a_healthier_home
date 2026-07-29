@@ -34,6 +34,6 @@ jobs:
       - name: Deploy JAR to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
-          app-name: vitalsync-backend-h3d4h6c3acf2hdeu
+          app-name: vitalsync-backend
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
           package: backend/vitalsync/target/vitalsync-0.0.1-SNAPSHOT.jar
