@@ -131,13 +131,13 @@
 			<plugin>
 				<groupId>com.microsoft.azure</groupId>
 				<artifactId>azure-webapp-maven-plugin</artifactId>
-				<version>2.13.0</version>
+				<version>2.14.1</version>
 				<configuration>
 					<schemaVersion>v2</schemaVersion>
 					<resourceGroup>vitalsync</resourceGroup>
-					<appName>vitalsync-backend</appName>
+					<appName>vitalsync-backend-h3d4h6c3acf2hdeu</appName>
 					<pricingTier>B1</pricingTier>
-					<region>eastus</region>
+					<region>southeastasia</region>
 					<runtime>
 						<os>Linux</os>
 						<javaVersion>Java 21</javaVersion>
