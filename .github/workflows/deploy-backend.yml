@@ -23,6 +23,10 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
+      - name: Restore .env file from secret
+        run: echo "${{ secrets.ENV_FILE_CONTENTS }}" > src/main/resources/.env
+        working-directory: backend/vitalsync
+
       - name: Make mvnw executable
         run: chmod +x mvnw
         working-directory: backend/vitalsync
