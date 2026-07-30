@@ -4,7 +4,7 @@
   <p><i>A premium, AI-powered healthcare ecosystem bridging the gap between patients and caregivers.</i></p>
 
   <p>
-    <a href="https://vitalsync-01.vercel.app" target="_blank">
+    <a href="https://vitalsync-cc.vercel.app" target="_blank">
       <img src="https://img.shields.io/badge/Live_Demo-Visit_Site-0EA5E9?style=for-the-badge&logo=vercel" alt="Live Demo" />
     </a>
   </p>
