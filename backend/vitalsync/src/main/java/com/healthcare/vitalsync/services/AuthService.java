@@ -46,7 +46,7 @@ public class AuthService {
         try {
             role = User.Role.valueOf(request.getRole().toUpperCase());
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Invalid role. Use PATIENT or CAREGIVER");
+            throw new IllegalArgumentException("Invalid role. Use PATIENT, CAREGIVER or DOCTOR");
         }
 
         if (role == User.Role.CAREGIVER) {

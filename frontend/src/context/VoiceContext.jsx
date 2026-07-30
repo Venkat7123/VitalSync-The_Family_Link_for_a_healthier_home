@@ -220,7 +220,7 @@ export const VoiceProvider = ({ children, userLanguage }) => {
 
       try {
         const primaryKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY_PRIMARY;
-        const secondaryKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY_SECONDARY || 'AIzaSyB0SgmPUEibkemaKHNumisnGFCk0k4ROxU';
+        const secondaryKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY_SECONDARY;
         
         const prompt = `Classify this user voice input into EXACTLY ONE of the following precise navigation keywords based on their intent:
 - DASHBOARD (User wants to go home, dashboard, or start page)
