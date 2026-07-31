@@ -56,6 +56,12 @@ async function request(endpoint, options = {}) {
     : await response.text().catch(() => '');
 
   if (!response.ok) {
+    if ((response.status === 401 || response.status === 403) && !endpoint.includes('/auth/login') && !endpoint.includes('/auth/register')) {
+      storage.clearAuth();
+      if (typeof window !== 'undefined') {
+        window.location.href = '/login';
+      }
+    }
     const message =
       (payload && typeof payload === 'object' && (payload.message || payload.error)) ||
       (typeof payload === 'string' && payload) ||
